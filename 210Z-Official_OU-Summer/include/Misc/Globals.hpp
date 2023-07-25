@@ -33,5 +33,6 @@ extern ArcPID arc_a;
 extern FeedbackControl mtp;
 extern Odometry odom;
 extern Math math;
+extern LinearMotionProfiler profiler;
 
 

@@ -32,6 +32,7 @@ CurvePID cur_c;
 ArcPID arc_a; 
 FeedbackControl mtp;
 Odometry odom;
+LinearMotionProfiler profiler;
 
 match_mov op_mov;
 

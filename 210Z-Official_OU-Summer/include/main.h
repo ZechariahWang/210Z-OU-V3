@@ -74,13 +74,13 @@ void opcontrol(void);
 #ifdef __cplusplus
 
 // Modules
-#include "210Z-Lib/Modules/SolenoidModule.hpp"
 #include "210Z-Lib/Modules/MathModule.hpp"
 #include "210Z-Lib/Modules/UtilityModule.hpp"
 #include "210Z-Lib/Modules/MetricsModule.hpp"
 #include "210Z-Lib/Modules/SelectorModule.hpp"
 #include "210Z-Lib/Modules/AlgorithmModule.hpp"
-#include "210Z-Lib/Modules/KFilterModule.hpp"
+#include "210Z-Lib/Modules/KalmanFilterModule.hpp"
+#include "210Z-Lib/Modules/MotionProfilerModule.hpp"
 
 // Driver
 #include "210Z-Lib/OperationSystems/CoreOpSystems.hpp"
