@@ -551,10 +551,10 @@ void initialize() { // Init function control
 	//-- Reset sensors and auton selector init //--
 	pros::delay(3000);
 	data.reset_all_primary_sensors();
-	// imu_sensor.set_rotation(0);
 	odom.set_horizontal_tracker_specs(2.75, 1.7);
 	odom.set_vertical_tracker_specs(2.75, 4.6);
 	imu_sensor.tare_rotation();
+	cata_sensor.calibrate();
 	sprintf(buffer, SYMBOL_LIST " Selected Path %d: %s", selected_auton, auton_Legend[selected_auton].c_str());
     lv_label_set_text(current_auton_display_selector, buffer);
 	// select.receive_selector_input(time); // Enabled Auton Selector (STEP 1)
@@ -605,43 +605,23 @@ void autonomous(){  // Autonomous function control
 	slew.set_slew_distance({7, 7});
 	slew.set_slew_min_power({70, 70});
 	mov_t.set_dt_constants(3.125, 1.6, 600); // Parameters are : Wheel diameter, gear ratio, motor cartridge type
-
 	// selector.recieve_selector_input(time); // Enabled Auton Selector (STEP 1) ONLY FOR PROTOTYPE USE
 	// select.select_current_auton(); // Enable Auton Selector (STEP 2) 
 
-	// rot.set_r_constants(6, 0, 45);
-	// rot.set_rotation_pid(270, 90);
-
-	// boomerang(20, 20, 90, 90000000, 90000000, 0.8, 2, 2);
-	// move_to_point(20, 20, 20000, 20000, 1.5, 3);
-
-	//PurePursuitTestPath();
-	move_to_point(10, 15, 20000, 20000, 1.5, 3);
+    mov_t.set_t_constants(0.45, 0, 5, 50);
+	mov_t.set_translation_pid(20, 70, false);
 
 	rot_r.set_r_constants(6, 0, 45);
 	rot_r.set_rotation_pid(315, 90);
 
-    mov_t.set_t_constants(0.45, 0, 5, 50);
-	mov_t.set_translation_pid(-5, 70, false);
-
-	// move_to_point(-20, 40, 20000, 20000, 1.5, 3);
-	// move_to_point(-10, 80, 20000, 20000, 1.5, 3);
-	// move_to_point(10, 100, 20000, 20000, 1.5, 3);
-	// move_to_point(20, 110, 20000, 20000, 1.5, 3);
-
-	PurePursuitTestPath();
+	rot_r.set_r_constants(6, 0, 45);
+	rot_r.set_rotation_pid(45, 90);
 
 	rot_r.set_r_constants(6, 0, 45);
-	rot_r.set_rotation_pid(220, 90);
+	rot_r.set_rotation_pid(0, 90);
 
     mov_t.set_t_constants(0.45, 0, 5, 50);
-	mov_t.set_translation_pid(-3, 70, false);
-
-    // mov_t.set_t_constants(0.45, 0, 5, 50);
-	// mov_t.set_translation_pid(40, 70, false);
-
-    // mov_t.set_t_constants(0.45, 0, 5, 50);
-	// mov_t.set_translation_pid(-40, 70, false);
+	mov_t.set_translation_pid(-20, 70, false);
 
 }
 
@@ -651,14 +631,17 @@ void autonomous(){  // Autonomous function control
  */
 
 void opcontrol(){ // Driver control function
-	char buffer[300]; // Display Buffer
+	char buffer[300]; 
 	while (true){
-		op_mov.x_drive_dt_Control();
+		odom.odometry_position_update();
+		op_mov.exponential_curve_accelerator();
+		prime_catapult();
+		activate_cata();
+
 		data_displayer.output_sensor_data(); // Display robot stats and info
 		data_displayer.output_game_data(); // Display robot stats and info
 		data_displayer.display_data();
 		data_displayer.output_misc_data();
-		odom.odometry_position_update();
 		pros::delay(delayAmount); // Dont hog CPU ;)
 	}
 }

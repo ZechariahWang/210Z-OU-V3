@@ -35,4 +35,6 @@ extern Odometry odom;
 extern Math math;
 extern LinearMotionProfiler profiler;
 
-
+extern pros::ADIAnalogIn cata_sensor;
+extern pros::Motor cata_motor;
+extern pros::Motor intake_motor;

@@ -278,7 +278,7 @@ double RotationPID::compute_r(double current, double target){
  */
 
 double CurvePID::compute_c(double current, double target){
-  cur_c.c_error = target - imu_sensor.get_rotation();
+  cur_c.c_error = get_min_angle_error_pid(target, current_robot_heading(), false);
   cur_c.c_derivative = cur_c.c_error - cur_c.c_prev_error;
   if (cur_c.c_ki != 0){
     cur_c.c_integral += cur_c.c_error;
@@ -343,7 +343,7 @@ void TranslationPID::set_translation_pid(double target,
     double avgPos = (dt_front_left.get_position() + dt_front_right.get_position()) / 2;
     kal.lateral_prediction_step();
     double filtered_position = kal.lateral_update_filter_step(avgPos);
-    double avg_voltage_req = mov_t.compute_t(filtered_position, target);
+    double avg_voltage_req = mov_t.compute_t(avgPos, target);
     double headingAssist = mov_t.find_min_angle(TARGET_THETA, current_robot_heading()) * mov_t.t_h_kp;
     cd++; if (cd <= 10){ utility::leftvoltagereq(0); utility::rightvoltagereq(0); continue;}
     if (target < 0) { is_backwards = true; } else { is_backwards = false; }

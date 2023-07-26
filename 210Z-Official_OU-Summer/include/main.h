@@ -101,6 +101,7 @@ void opcontrol(void);
 // Misc
 #pragma once
 #include "Misc/Globals.hpp"
+#include "Misc/SecondaryOpSystems.hpp"
 /**
  * You can add C++-only headers here
  */

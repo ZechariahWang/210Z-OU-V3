@@ -42,3 +42,7 @@ Selector data;
 KalmanFilter kal;
 Slew slew;
 Math math;
+
+pros::ADIAnalogIn cata_sensor('a');
+pros::Motor cata_motor(3, pros::E_MOTOR_GEARSET_06, false, pros::E_MOTOR_ENCODER_COUNTS);
+pros::Motor intake_motor(2, pros::E_MOTOR_GEARSET_06, false, pros::E_MOTOR_ENCODER_COUNTS);
