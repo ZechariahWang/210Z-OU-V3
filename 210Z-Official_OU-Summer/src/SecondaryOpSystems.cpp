@@ -52,3 +52,12 @@ void activate_cata(){
         }
     }
 }
+
+void raw_cata(){
+    if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R1)) {
+        cata_motor.move_voltage(-12000);
+    }
+    else{
+        cata_motor.move_voltage(0);
+    }
+}

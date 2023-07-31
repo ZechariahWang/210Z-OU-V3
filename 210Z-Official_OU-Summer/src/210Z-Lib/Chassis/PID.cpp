@@ -343,7 +343,7 @@ void TranslationPID::set_translation_pid(double target,
     double avgPos = (dt_front_left.get_position() + dt_front_right.get_position()) / 2;
     kal.lateral_prediction_step();
     double filtered_position = kal.lateral_update_filter_step(avgPos);
-    double avg_voltage_req = mov_t.compute_t(avgPos, target);
+    double avg_voltage_req = mov_t.compute_t(filtered_position, target);
     double headingAssist = mov_t.find_min_angle(TARGET_THETA, current_robot_heading()) * mov_t.t_h_kp;
     cd++; if (cd <= 10){ utility::leftvoltagereq(0); utility::rightvoltagereq(0); continue;}
     if (target < 0) { is_backwards = true; } else { is_backwards = false; }

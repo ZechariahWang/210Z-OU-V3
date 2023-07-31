@@ -7,6 +7,7 @@
  */
 
 #include "main.h"
+#include "Misc/Globals.hpp"
 #include "display/lv_objx/lv_label.h"
 #include "pros/motors.h"
 #include "vector"
@@ -601,6 +602,15 @@ void PurePursuitTestPath(){
     }
 }
 
+void set_to_brake(){
+	dt_front_left.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
+	dt_middle_left.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);	
+	dt_rear_left.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
+	dt_front_right.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
+	dt_middle_right.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
+	dt_rear_right.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
+}
+
 void autonomous(){  // Autonomous function control
 	slew.set_slew_distance({7, 7});
 	slew.set_slew_min_power({70, 70});
@@ -608,20 +618,18 @@ void autonomous(){  // Autonomous function control
 	// selector.recieve_selector_input(time); // Enabled Auton Selector (STEP 1) ONLY FOR PROTOTYPE USE
 	// select.select_current_auton(); // Enable Auton Selector (STEP 2) 
 
-    mov_t.set_t_constants(0.45, 0, 5, 50);
-	mov_t.set_translation_pid(20, 70, false);
+    mov_t.set_t_constants(0.45, 0, 5, 300);
+	mov_t.set_translation_pid(46 * 0.625, 90, false);
 
 	rot_r.set_r_constants(6, 0, 45);
-	rot_r.set_rotation_pid(315, 90);
+	rot_r.set_rotation_pid(270, 90);
+
+
+    mov_t.set_t_constants(0.45, 0, 5, 300);
+	mov_t.set_translation_pid(72 * 0.625, 90, false);
 
 	rot_r.set_r_constants(6, 0, 45);
-	rot_r.set_rotation_pid(45, 90);
-
-	rot_r.set_r_constants(6, 0, 45);
-	rot_r.set_rotation_pid(0, 90);
-
-    mov_t.set_t_constants(0.45, 0, 5, 50);
-	mov_t.set_translation_pid(-20, 70, false);
+	rot_r.set_rotation_pid(180, 90);
 
 }
 
@@ -635,8 +643,8 @@ void opcontrol(){ // Driver control function
 	while (true){
 		odom.odometry_position_update();
 		op_mov.exponential_curve_accelerator();
-		prime_catapult();
-		activate_cata();
+		power_intake();
+		raw_cata();
 
 		data_displayer.output_sensor_data(); // Display robot stats and info
 		data_displayer.output_game_data(); // Display robot stats and info
