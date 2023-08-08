@@ -1,7 +1,7 @@
 /**
  * @file KFilter.cpp
  * @author Zechariah Wang
- * @brief Kalman filter for better estimates of robot future metrics
+ * @brief Linear Kalman filter for better estimates of robot future metrics
  * @version 0.1
  * @date 2023-07-14
  */

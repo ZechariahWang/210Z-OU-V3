@@ -47,13 +47,6 @@ FeedbackControl::FeedbackControl(){
   mtp.t_local_threshholdcounter   = 0;
 }
 
-/**
- * @brief Returns a value for a simple PID controller to be used within the MTP algorithm
- * 
- * @param t_theta target theta
- * @return PID value for a simple turn
- */
-
 double local_rotation_pid(double t_theta){
   utility::fullreset(0, false);
   mtp.t_local_error = 0;
@@ -88,53 +81,6 @@ double find_min_angle(const int16_t targetHeading, const int16_t currentrobotHea
   if (turnAngle > 180 || turnAngle < -180){ turnAngle = turnAngle - (utility::sgn(turnAngle) * 360); }
   return turnAngle;
 }
-
-/**
- * @brief Find the min distance between two angles
- * 
- * @param angle1 Initial angle 
- * @param angle2 Secondary Angle
- * @param radians Are the angles in radians?
- */
-
-double get_min_angle_error(float angle1, float angle2, bool radians){
-    float max = radians ? 2 * M_PI : 360;
-    float half = radians ? M_PI : 180;
-    angle1 = fmod(angle1, max);
-    angle2 = fmod(angle2, max);
-    float error = angle1 - angle2;
-    if (error > half) error -= max;
-    else if (error < -half) error += max;
-    return error;
-}
-
-double get_angular_error(double target_x, double target_y){
-  double x = target_x - global_robot_x;
-  double y = target_y - global_robot_y;
-  double delta_theta = atan2(x, y) * 180 / M_PI - current_robot_heading();
-  while (fabs(delta_theta) > 180){
-    delta_theta -= 360 * delta_theta / fabs(delta_theta);
-  }
-  return delta_theta;
-}
-
-double get_distance_error(double d_target_x, double d_target_y){
-	double x = d_target_x;
-	double y = d_target_y;
-	y -= global_robot_y;
-	x -= global_robot_x;
-	return sqrt(x * x + y * y);
-}
-
-/**
- * @brief Convert angle to desired unit
- * 
- * @param angle the current angle
- * @return angle in desired unit (degree or radians)
- */
-
-int16_t radian_to_degrees_converter(const double angle) { return angle * 180 / M_PI; } // convert radian to degrees
-int16_t degrees_to_radians_converter(const double angle){ return angle * M_PI / 180; } // Convert degrees to radian
 
 /**
  * @brief MTP Algorithm. Move to a desired coordinate position while facing a desired angle. Can only be used with mecanum drives
@@ -201,8 +147,6 @@ void FeedbackControl::move_to_reference_pose(const double targetX,
                                                  const double targetY,
                                                  const double targetHeading,
                                                  const double radius){
-
-  FeedbackControl Auton_Framework;
   mtp.reset_mtp_constants();
   while (true){
     double abstargetAngle = atan2f(targetX - global_robot_x, targetY - global_robot_y) * 180 / M_PI;
@@ -252,46 +196,23 @@ void FeedbackControl::move_to_reference_pose(const double targetX,
 }
 
 /**
- * @brief Swing to a specific coordinate position. Used for Pure Pursuit, and other motion algorithms
+ * @brief Turn to a specific coordinate position
  * 
  * @param targetX the target x coordinate
  * @param targetY the target y coordinate
- * @param swingDamper the amount the arc is dampered by
  */
 
-void FeedbackControl::swing_to_point(const double tx,
-                                         const double ty,
-                                         const double swingDamper){
-                                          
-  double defaultVoltage = 40;
-  double abstargetAngle = atan2f(tx - global_robot_x, ty - global_robot_y) * 180 / M_PI;
-  if (abstargetAngle < 0){ abstargetAngle += 360; }
-  double targetTheta = find_min_angle(abstargetAngle, imu_sensor.get_rotation()) * 100;
-  utility::leftvoltagereq((defaultVoltage * (12000.0 / 127)) + targetTheta);
-  utility::rightvoltagereq((defaultVoltage * (12000.0 / 127)) - targetTheta);
-}
-
-// Curve to desired point
-void curve_to_point(const double tx, const double ty, const double curveDamper){
-  utility::leftvoltagereq(100 * (12000.0 / 127));
-  utility::rightvoltagereq(100 * (12000.0 / 127));
-}
-
-// Turn to target coordinate position
 void FeedbackControl::TurnToPoint(const int targetX, const int targetY){
   double counter = 0;
   while (true){
-    double deltaX = targetX - global_robot_x;
-    double deltaY = targetY - global_robot_y;
+    double angular_error = utility::get_angular_error(targetX, targetY);
+    double angular_speed = angular_error * 5;
 
-    double targetTheta = fmod((atan2f(deltaY, deltaX) * 180 / M_PI), 360);
-    double target_heading = get_min_angle_error(targetTheta, current_robot_heading(), false);
-
-    utility::leftvoltagereq(target_heading * (12000.0 / 127) * 5);
-    utility::rightvoltagereq(-target_heading * (12000.0 / 127) * 5);
+    utility::leftvoltagereq(angular_speed * (12000.0 / 127) * 5);
+    utility::rightvoltagereq(-angular_speed * (12000.0 / 127) * 5);
     std::cout << "in ttp loop" << std::endl;
 
-    if (fabs(target_heading) < 3){
+    if (fabs(angular_error) < 3){
       counter++;
     }
     if (counter >= 10){
@@ -303,37 +224,16 @@ void FeedbackControl::TurnToPoint(const int targetX, const int targetY){
   }
 }
 
-void boomerang(double target_x, double target_y, double target_theta, double max_linear_speed, double max_rotation_speed, double d_lead, double kp_linear, double kp_angular) {
-    while (true) {
-        odom.odometry_position_update();
-        double h = std::sqrt(pow(target_x - global_robot_x, 2) + pow(target_y - global_robot_y, 2));
-        std::cout << "h: " << h << std::endl;     
-        double at = target_theta * M_PI / 180;
-        double carrot_point_x = target_x - h * std::sin(at) * d_lead;
-        double carrot_point_y = target_y - h * std::cos(at) * d_lead;
-
-        double global_turn_error = get_min_angle_error(target_theta, current_robot_heading(), false);
-        double global_linear_error = get_distance_error(target_x, target_y);
-        double linear_error = global_linear_error;
-        double angular_error = get_angular_error(carrot_point_x, carrot_point_y);
-
-        double linear_speed = linear_error * kp_linear;
-        double angular_speed = angular_error * kp_angular;
-
-        if (std::fabs(global_linear_error) < 3) {
-      	    rot_r.set_r_constants(6, 0, 45);
-	          rot_r.set_rotation_pid(target_theta, 90);
-            utility::stop();
-            break;
-        }
-
-        utility::leftvoltagereq((linear_speed + angular_speed) * (12000.0 / 127));
-        utility::rightvoltagereq((linear_speed - angular_speed) * (12000.0 / 127));
-
-        pros::delay(10);
-    }
-}
-
+/**
+ * @brief Mimic the movement of the standard MTP algorithm. Used for Pure Pursuit
+ * 
+ * @param target_x the target x coordinate
+ * @param target_y the target y coordinate
+ * @param max_linear_speed max speed robot can move while doing lateral movements
+ * @param max_rotation_speed max speed robot can move while doing rotational movements
+ * @param kp_linear linear proportional value
+ * @param kp_angular angular proportional value
+ */
 
 void mimic_move_to_point(double target_x,
                    double target_y,
@@ -343,8 +243,8 @@ void mimic_move_to_point(double target_x,
                    double kp_angular){
 
     odom.odometry_position_update();
-    double angular_error = get_angular_error(target_x, target_y);
-    double linear_error = get_distance_error(target_x, target_y);
+    double angular_error = utility::get_angular_error(target_x, target_y);
+    double linear_error = utility::get_distance_error(target_x, target_y);
 
     double linear_speed = linear_error * kp_linear;
     double angular_speed = angular_error * kp_angular;
@@ -366,6 +266,17 @@ void mimic_move_to_point(double target_x,
     utility::rightvoltagereq((linear_speed - angular_speed) * (12000.0 / 127));
 }
 
+/**
+ * @brief Move to desired gloal robot position
+ * 
+ * @param target_x the target x coordinate
+ * @param target_y the target y coordinate
+ * @param max_linear_speed max speed robot can move while doing lateral movements
+ * @param max_rotation_speed max speed robot can move while doing rotational movements
+ * @param kp_linear linear proportional value
+ * @param kp_angular angular proportional value
+ */
+
 void move_to_point(double target_x,
                    double target_y,
                    double max_linear_speed,
@@ -375,8 +286,8 @@ void move_to_point(double target_x,
 
   while (true){
     odom.odometry_position_update();
-    double angular_error = get_angular_error(target_x, target_y);
-    double linear_error = get_distance_error(target_x, target_y);
+    double angular_error = utility::get_angular_error(target_x, target_y);
+    double linear_error = utility::get_distance_error(target_x, target_y);
 
     double linear_speed = linear_error * kp_linear;
     double angular_speed = angular_error * kp_angular;
@@ -404,6 +315,97 @@ void move_to_point(double target_x,
     pros::delay(10);
   }
 }
+
+void boomerang(double target_x, double target_y, double target_theta, double max_linear_speed, double max_rotation_speed, double d_lead, double kp_linear, double kp_angular) {
+    while (true) {
+        odom.odometry_position_update();
+        double h = std::sqrt(pow(target_x - global_robot_x, 2) + pow(target_y - global_robot_y, 2));
+        std::cout << "h: " << h << std::endl;     
+        double at = target_theta * M_PI / 180;
+        double carrot_point_x = target_x - h * std::sin(at) * d_lead;
+        double carrot_point_y = target_y - h * std::cos(at) * d_lead;
+
+        double global_turn_error = utility::get_min_angle_error(target_theta, current_robot_heading(), false);
+        double global_linear_error = utility::get_distance_error(target_x, target_y);
+        double linear_error = global_linear_error;
+        double angular_error = utility::get_angular_error(carrot_point_x, carrot_point_y);
+
+        double linear_speed = linear_error * kp_linear;
+        double angular_speed = angular_error * kp_angular;
+
+        if (std::fabs(global_linear_error) < 3) {
+      	    rot_r.set_r_constants(6, 0, 45);
+	          rot_r.set_rotation_pid(target_theta, 90);
+            utility::stop();
+            break;
+        }
+
+        utility::leftvoltagereq((linear_speed + angular_speed) * (12000.0 / 127));
+        utility::rightvoltagereq((linear_speed - angular_speed) * (12000.0 / 127));
+
+        pros::delay(10);
+    }
+}
+
+double lin_kp = 3;
+double ang_kp = 1.5;
+void new_boomerang(double pointTarget_x, double pointTarget_y, double angularTarget, double leadPct){
+	// previous sensor values
+	static double pe_lin = 0;
+	static double pe_ang = 0;
+
+	// an angular target > 360 indicates no desired final pose angle
+	bool noPose = (angularTarget > 360);
+	double carrotPoint_x; 
+	double carrotPoint_y; 
+
+	if (noPose) {
+		// point movement
+		carrotPoint_x = pointTarget_x;
+		carrotPoint_y = pointTarget_y;
+	} else {
+		// pose movement
+		double h = utility::get_distance_error(pointTarget_x, pointTarget_y);
+		double at = angularTarget * M_PI / 180.0;
+		carrotPoint_x = pointTarget_x - h * cos(at) * leadPct,
+		carrotPoint_y = pointTarget_y - h * sin(at) * leadPct;
+	}
+
+	// get current error
+	double lin_error = utility::get_distance_error(pointTarget_x, pointTarget_y);
+	double ang_error = utility::get_angular_error(carrotPoint_x, carrotPoint_y);
+
+	// calculate linear speed
+	double lin_speed;
+	lin_speed = lin_error * lin_kp;
+
+  double ang_speed;
+  if (lin_error < 10) {
+		if (noPose) {
+			ang_speed = 0; // disable turning when close to the point to prevent spinning
+		} else {
+			// turn to face the finale pose angle if executing a pose movement
+			double poseError = (angularTarget * M_PI / 180) - odom_heading;
+			while (fabs(poseError) > M_PI)
+				poseError -= 2 * M_PI * poseError / fabs(poseError);
+			ang_speed = poseError * ang_kp;
+		}
+
+		// reduce the linear speed if the bot is tangent to the target
+		lin_speed *= cos(ang_error);
+
+	} else {
+		ang_speed = ang_error * ang_kp;
+	}
+
+	// add speeds together
+	double left_speed = lin_speed - ang_speed;
+	double right_speed = lin_speed + ang_speed;
+
+	utility::leftvoltagereq(left_speed);
+	utility::rightvoltagereq(right_speed);
+}
+
 
 
 

@@ -7,7 +7,7 @@
  */
 
 #include "main.h"
-#include "Misc/Globals.hpp"
+#include "Config/Globals.hpp"
 #include "display/lv_objx/lv_label.h"
 #include "pros/motors.h"
 #include "vector"
@@ -573,34 +573,6 @@ void competition_initialize() {}
  * @brief PID units are in inches
  *  
  */
-
-void PurePursuitTestPath(){
-    std::vector<CurvePoint> Path;
-
-	double finalX = 15;
-	double finalY = 100;
-    CurvePoint StartPos(utility::get_x(), utility::get_y(), 0, 0, 10, 5, 1);
-    CurvePoint newPoint1(-20, 30, 0, 0, 10, 5, 1);
-    CurvePoint newPoint2(-10, 80, 0, 0, 10, 5, 1);
-    CurvePoint newPoint3(15, 95, 0, 0, 10, 5, 1);
-    CurvePoint end(finalX, finalY, 0, 0, 10, 5, 1);
-    Path.push_back(StartPos);
-    Path.push_back(newPoint1); 
-    Path.push_back(newPoint2);
-    Path.push_back(newPoint3);
-	Path.push_back(end);
-
-    while (true){
-      odom.odometry_position_update();
-      if (fabs(sqrt(pow(finalX - utility::get_x(), 2) + pow(finalY - utility::get_y(), 2))) <= 5){
-		move_to_point(finalX, finalY, 900000, 900000, 3, 2.5);
-        utility::stop();
-        break;
-      }
-      FollowCurve(Path, 0);
-      pros::delay(10);
-    }
-}
 
 void set_to_brake(){
 	dt_front_left.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);

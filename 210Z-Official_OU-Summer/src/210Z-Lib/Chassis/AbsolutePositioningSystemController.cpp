@@ -14,8 +14,7 @@
 
 double    global_robot_x; // global X
 double    global_robot_y; // global Y
-
-double globalTheta           = 0;
+double    globalTheta;    // global theta
 
 /**
  * @brief The current theta of the robot wrapped to 360 degrees
@@ -32,6 +31,11 @@ int current_robot_heading() {
   }
   return globalTheta; 
 }
+
+/**
+ * @brief Set the value of drivetrain specifics
+ * 
+ */
 
 void Odometry::set_horizontal_tracker_specs(double diameter, double offset){
   odom.global_horizontal_diameter = diameter;
@@ -63,6 +67,11 @@ double Odometry::get_distance_travelled(bool vertical, bool horizontal){
 
 float getEncoderDistanceTraveled() { return (float(vertical_auxiliary_sensor.get_value()) * 2.75 * M_PI / 360); }
 float getRotationDistanceTraveled() { return (float(horizontal_rotation_sensor.get_position()) * 2.75 * M_PI / 36000); }
+
+/**
+ * @brief Main Odometry logic for global robot position tracking
+ * 
+ */
 
 float odom_heading;
 float previousVertical1 = 0;

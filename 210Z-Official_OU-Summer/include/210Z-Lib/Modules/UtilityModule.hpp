@@ -14,5 +14,9 @@ namespace utility { // util
     double get_y();
     void set_x(double x);
     void set_y(double y);
+    double get_min_angle_error(float angle1, float angle2, bool radians);
+    double get_angular_error(double target_x, double target_y);
+    double get_distance_error(double d_target_x, double d_target_y);
+
 
 }

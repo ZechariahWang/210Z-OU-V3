@@ -76,19 +76,20 @@ void opcontrol(void);
 // Modules
 #include "210Z-Lib/Modules/MathModule.hpp"
 #include "210Z-Lib/Modules/UtilityModule.hpp"
-#include "210Z-Lib/Modules/MetricsModule.hpp"
-#include "210Z-Lib/Modules/SelectorModule.hpp"
-#include "210Z-Lib/Modules/AlgorithmModule.hpp"
-#include "210Z-Lib/Modules/KalmanFilterModule.hpp"
-#include "210Z-Lib/Modules/MotionProfilerModule.hpp"
+#include "210Z-Lib/Modules/MetricsReturnModule.hpp"
+#include "210Z-Lib/Modules/AutonomousSelectorModule.hpp"
+#include "210Z-Lib/Modules/AsyncPathTrackingAlgorithmsModule.hpp"
+#include "210Z-Lib/Modules/LinearKalmanFilterModule.hpp"
+#include "210Z-Lib/Modules/LateralMotionProfilerModule.hpp"
+#include "210Z-Lib/Modules/PIDcontrollerModule.hpp"
 
 // Driver
 #include "210Z-Lib/OperationSystems/CoreOpSystems.hpp"
 
 // Subsystems
-#include "210Z-Lib/Chassis/Algorithms.hpp"
-#include "210Z-Lib/Chassis/Odometry.hpp"
-#include "210Z-Lib/Chassis/PID.hpp"
+#include "210Z-Lib/Chassis/AsyncFeedbackController.hpp"
+#include "210Z-Lib/Chassis/AbsolutePositioningSystemController.hpp"
+#include "210Z-Lib/Chassis/LateralChassisController.hpp"
 #include "210Z-Lib/Chassis/InitializeUI.hpp"
 
 // Scripts
@@ -100,8 +101,8 @@ void opcontrol(void);
 
 // Misc
 #pragma once
-#include "Misc/Globals.hpp"
-#include "Misc/SecondaryOpSystems.hpp"
+#include "Config/Globals.hpp"
+#include "SpecifyGameOpLogic/SecondaryOpSystems.hpp"
 /**
  * You can add C++-only headers here
  */
