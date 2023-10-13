@@ -242,7 +242,6 @@ void mimic_move_to_point(double target_x,
                    double kp_linear, 
                    double kp_angular){
 
-    odom.odometry_position_update();
     double angular_error = utility::get_angular_error(target_x, target_y);
     double linear_error = utility::get_distance_error(target_x, target_y);
 
@@ -260,6 +259,11 @@ void mimic_move_to_point(double target_x,
     }
     if (angular_speed < -max_rotation_speed){
       angular_speed = -max_rotation_speed;
+    }
+
+    if (fabs(linear_error) < 7){
+      utility::stop();
+      return;
     }
 
     utility::leftvoltagereq((linear_speed + angular_speed) * (12000.0 / 127));
@@ -277,20 +281,28 @@ void mimic_move_to_point(double target_x,
  * @param kp_angular angular proportional value
  */
 
-void move_to_point(double target_x,
+void FeedbackControl::move_to_point(double target_x,
                    double target_y,
                    double max_linear_speed,
                    double max_rotation_speed, 
                    double kp_linear, 
-                   double kp_angular){
+                   double kp_angular,
+                   bool backwards){
 
   while (true){
-    odom.odometry_position_update();
-    double angular_error = utility::get_angular_error(target_x, target_y);
-    double linear_error = utility::get_distance_error(target_x, target_y);
+    odom_task_new();
+
+    double angular_error = utility::getAngleError(target_x, target_y, false);
+    double linear_error = utility::getDistanceError(target_x, target_y);
 
     double linear_speed = linear_error * kp_linear;
     double angular_speed = angular_error * kp_angular;
+
+    std::cout << "/////////////////////////////////////// " << std::endl;
+    std::cout << "linear error: " << linear_error << std::endl;   
+    std::cout << "gx: " << global_robot_x << std::endl;
+    std::cout << "gy: " << global_robot_y << std::endl;  
+    std::cout << "/////////////////////////////////////// " << std::endl;
 
     if (linear_speed > max_linear_speed) {
       linear_speed = max_linear_speed;
@@ -305,20 +317,20 @@ void move_to_point(double target_x,
       angular_speed = -max_rotation_speed;
     }
 
-    utility::leftvoltagereq((linear_speed + angular_speed) * (12000.0 / 127));
-    utility::rightvoltagereq((linear_speed - angular_speed) * (12000.0 / 127));
+    utility::leftvoltagereq((linear_speed - angular_speed) * (12000.0 / 127));
+    utility::rightvoltagereq((linear_speed + angular_speed) * (12000.0 / 127));
 
-    if (fabs(linear_error) < 7){
+    if (fabs(linear_error) < 3){
       utility::stop();
       break;
     }
+
     pros::delay(10);
   }
 }
 
 void boomerang(double target_x, double target_y, double target_theta, double max_linear_speed, double max_rotation_speed, double d_lead, double kp_linear, double kp_angular) {
     while (true) {
-        odom.odometry_position_update();
         double h = std::sqrt(pow(target_x - global_robot_x, 2) + pow(target_y - global_robot_y, 2));
         std::cout << "h: " << h << std::endl;     
         double at = target_theta * M_PI / 180;
@@ -347,64 +359,193 @@ void boomerang(double target_x, double target_y, double target_theta, double max
     }
 }
 
-double lin_kp = 3;
-double ang_kp = 1.5;
-void new_boomerang(double pointTarget_x, double pointTarget_y, double angularTarget, double leadPct){
-	// previous sensor values
-	static double pe_lin = 0;
-	static double pe_ang = 0;
+std::vector<std::pair<double, double>> test_path = {
+  {0.0, 0.0},
+  {5, 10},
+  {2, 10},
+  {3, 5},
+  {10, 8},
+  {3, 6},
+  {2, 12},
+  {5, 19},
+};
 
-	// an angular target > 360 indicates no desired final pose angle
-	bool noPose = (angularTarget > 360);
-	double carrotPoint_x; 
-	double carrotPoint_y; 
+double kp_linear = 3;
+double kp_angular = 1.5;
 
-	if (noPose) {
-		// point movement
-		carrotPoint_x = pointTarget_x;
-		carrotPoint_y = pointTarget_y;
-	} else {
-		// pose movement
-		double h = utility::get_distance_error(pointTarget_x, pointTarget_y);
-		double at = angularTarget * M_PI / 180.0;
-		carrotPoint_x = pointTarget_x - h * cos(at) * leadPct,
-		carrotPoint_y = pointTarget_y - h * sin(at) * leadPct;
-	}
+void eclipse_trajectory_algorithm(std::vector<std::pair<double, double>> path, double max_linear_speed, double max_rotation_speed){
+  for (size_t i = 0; i < path.size(); i++) {
 
-	// get current error
-	double lin_error = utility::get_distance_error(pointTarget_x, pointTarget_y);
-	double ang_error = utility::get_angular_error(carrotPoint_x, carrotPoint_y);
+    const auto& point = path[i];
+    std::cout << "x: " << point.first << ", y: " << point.second << std::endl;
 
-	// calculate linear speed
-	double lin_speed;
-	lin_speed = lin_error * lin_kp;
+    if (i == path.size() - 1){
+      mtp.move_to_point(point.first, point.second, max_linear_speed, max_rotation_speed, kp_linear, kp_angular, false);
+      return;
+    }
 
-  double ang_speed;
-  if (lin_error < 10) {
-		if (noPose) {
-			ang_speed = 0; // disable turning when close to the point to prevent spinning
-		} else {
-			// turn to face the finale pose angle if executing a pose movement
-			double poseError = (angularTarget * M_PI / 180) - odom_heading;
-			while (fabs(poseError) > M_PI)
-				poseError -= 2 * M_PI * poseError / fabs(poseError);
-			ang_speed = poseError * ang_kp;
-		}
+    while (true){
+      double angular_error = utility::get_angular_error(point.first, point.second);
+      double linear_error = utility::get_distance_error(point.first, point.second);
 
-		// reduce the linear speed if the bot is tangent to the target
-		lin_speed *= cos(ang_error);
+      double linear_speed = 5;
+      double angular_speed = angular_error * 5;
 
-	} else {
-		ang_speed = ang_error * ang_kp;
-	}
+      if (linear_speed > max_linear_speed) {
+        linear_speed = max_linear_speed;
+      } if (linear_speed < -max_linear_speed){
+        linear_speed = -max_linear_speed;
+      } if (angular_speed > max_rotation_speed){
+        angular_speed = max_rotation_speed;
+      } if (angular_speed < -max_rotation_speed){
+        angular_speed = -max_rotation_speed;
+      }
 
-	// add speeds together
-	double left_speed = lin_speed - ang_speed;
-	double right_speed = lin_speed + ang_speed;
+      utility::leftvoltagereq((linear_speed + angular_speed) * (12000.0 / 127));
+      utility::rightvoltagereq((linear_speed - angular_speed) * (12000.0 / 127));
 
-	utility::leftvoltagereq(left_speed);
-	utility::rightvoltagereq(right_speed);
+      data_displayer.output_sensor_data(); // Display robot stats and info
+      data_displayer.output_game_data(); // Display robot stats and info
+      data_displayer.display_data();
+      data_displayer.output_misc_data();
+
+      if (fabs(linear_error) < 5){
+        break;
+      }
+
+      pros::delay(10);
+    }
+    std::cout << "point reached" << std::endl;
+  }
 }
+
+/**
+ * @brief Move the chassis towards the target pose
+ *
+ * Uses the boomerang controller
+ *
+ * @param x x location
+ * @param y y location
+ * @param theta theta (in degrees). Target angle
+ * @param timeout longest time the robot can spend moving
+ * @param async whether the function should be run asynchronously. false by default
+ * @param forwards whether the robot should move forwards or backwards. true for forwards (default), false for
+ * backwards
+ * @param lead the lead parameter. Determines how curved the robot will move. 0.6 by default (0 < lead < 1)
+ * @param chasePower higher values make the robot move faster but causes more overshoot on turns. 0 makes it
+ * default to global value
+ * @param maxSpeed the maximum speed the robot can move at. 127 at default
+ * @param log whether the chassis should log the turnTo function. false by default
+ */
+void boomerang_in_radians(float x, float y, float theta, bool forwards, float lead, float maxSpeed) {
+    double target_x = x;
+    double target_y = y;
+    double target_theta = M_PI_2 - math.deg_to_rad(theta);
+
+    double last_x = global_robot_x;
+    double last_y = global_robot_y;
+    double last_theta = odom_heading;
+    double prevLinearPower = 0;
+    int distTravelled = 0;
+    bool close = false; 
+
+    if (!forwards) target_theta = fmod(target_theta + M_PI, 2 * M_PI); // backwards movement
+
+    while (true) {
+      update_odom_new();
+        // get current pose
+        double current_x = global_robot_x;
+        double current_y = global_robot_y;
+        double current_theta = odom_heading;
+        double h = std::sqrt(pow(target_x - global_robot_x, 2) + pow(target_y - global_robot_y, 2));
+        if (!forwards) current_theta += M_PI;
+        current_theta = M_PI_2 - current_theta; // convert to standard form
+
+        // update completion vars
+        distTravelled += std::sqrt(pow(last_x - global_robot_x, 2) + pow(last_y - global_robot_y, 2));
+        last_x = global_robot_x;
+        last_y = global_robot_y;
+        last_theta = current_theta;
+
+        // check if the robot is close enough to the target to start settling
+        if (std::sqrt(pow(target_x - global_robot_x, 2) + pow(target_y - global_robot_y, 2) < 7.5 && close == false)) {
+            close = true;
+            maxSpeed = fmax(fabs(prevLinearPower), 30);
+        }
+
+        double carrot_x = target_x - h * std::cos(math.deg_to_rad(target_theta)) * lead;
+        double carrot_y = target_y - h * std::sin(math.deg_to_rad(target_theta)) * lead;
+        if (close){
+          carrot_x = x;
+          carrot_y = y;
+        }
+
+        // calculate error
+        float angularError = utility::get_angular_error(carrot_x, carrot_y);
+        float linearError = utility::get_distance_error(carrot_x, carrot_y) * cos(math.deg_to_rad(angularError)); // linear error
+        if (close) angularError = utility::get_min_angle_error(target_theta, current_robot_heading(), false); // settling behavior
+        if (!forwards) linearError = -linearError;
+
+        // get PID outputs
+        float angularPower = math.rad_to_deg(angularError) * 5;
+        float linearPower = linearError * 5;
+
+
+        // prioritize turning over moving
+        float overturn = fabs(angularPower) + fabs(linearPower) - maxSpeed;
+        if (overturn > 0) linearPower -= linearPower > 0 ? overturn : -overturn;
+        prevLinearPower = linearPower;
+
+        // calculate motor powers
+        float leftPower = linearPower + angularPower;
+        float rightPower = linearPower - angularPower;
+
+        // move the motors
+        utility::leftvoltagereq(leftPower);
+        utility::rightvoltagereq(rightPower);
+
+        if (fabs(h) < 3){
+          utility::leftvoltagereq(0);
+          utility::rightvoltagereq(0);
+          return;
+        }
+
+        pros::delay(10); // delay to save resources
+    }
+    distTravelled = -1;
+}
+
+void new_boomerang(float x, float y, float theta, float lead) {
+    double target_theta = 90 - theta;
+    bool close = false; // used for settling
+    double distTravelled = 0;
+    while (true) {
+        // get current pose
+        update_odom_new();
+        double temp_odom_heading = odom_heading;
+        temp_odom_heading = 90.0 - (temp_odom_heading * 180 / M_PI); // convert to standard form in degrees
+
+        // check if the robot is close enough to the target to start settling
+        double h = std::sqrt(pow(x - global_robot_x, 2) + pow(y - global_robot_y, 2));
+        if (h < 7.5) close = true;
+
+        // calculate the carrot point
+
+        double carrot_x = x - h * std::cos(math.deg_to_rad(theta)) * lead;
+        double carrot_y = y - h * std::sin(math.deg_to_rad(theta)) * lead;
+        if (close){
+          carrot_x = x; // settling behavior
+          carrot_y = y;
+        }
+
+        mimic_move_to_point(carrot_x, carrot_y, 900, 900, 3, 1.5);
+
+        if (fabs(h) < 5){
+          utility::stop();
+          return;
+        }
+    }
+  }
 
 
 

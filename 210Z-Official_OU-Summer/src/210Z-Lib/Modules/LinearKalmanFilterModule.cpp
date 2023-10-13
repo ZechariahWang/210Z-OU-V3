@@ -8,6 +8,11 @@
 
 #include "main.h"
 
+/**
+ * @brief Setting up default k filter constants
+ * 
+ */
+
 KalmanFilter::KalmanFilter(){
     kal.lateral_process_noise_covariance = 0.01;
     kal.lateral_measurement_noise_covariance = 0.1;
@@ -16,6 +21,11 @@ KalmanFilter::KalmanFilter(){
     kal.y_process_noise_covariance = 0.01;
     kal.y_measurement_noise_covariance = 0.1;
 }
+
+/**
+ * @brief Lateral Kalman Filter
+ * 
+ */
 
 void KalmanFilter::update_lateral_components(){
     kal.lateral_state_estimate = 0;
@@ -36,6 +46,11 @@ double KalmanFilter::lateral_update_filter_step(double raw_position){
     return kal.lateral_state_estimate;
 }
 
+/**
+ * @brief X Coordinate Kalman Filter
+ * 
+ */
+
 void KalmanFilter::update_x_components(){
     kal.x_state_estimate = 0;
     kal.x_error_covariance = 1;
@@ -54,6 +69,11 @@ double KalmanFilter::x_update_filter_step(double raw_position){
     kal.x_error_covariance = (1 - gain) * kal.x_predicted_p;
     return kal.x_state_estimate;
 }
+
+/**
+ * @brief y coordinate kalman filter
+ * 
+ */
 
 void KalmanFilter::update_y_components(){
     kal.y_state_estimate = 0;
