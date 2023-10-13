@@ -340,12 +340,14 @@ void TranslationPID::set_translation_pid(double target,
   double init_left_pos = dt_front_left.get_position(); double init_right_pos = dt_front_right.get_position();
   kal.update_lateral_components();
   while (true){
+    twoSensorOdom();
     double avgPos = (dt_front_left.get_position() + dt_front_right.get_position()) / 2;
     kal.lateral_prediction_step();
-    double filtered_position = kal.lateral_update_filter_step(avgPos);
-    double avg_voltage_req = mov_t.compute_t(filtered_position, target);
-    double headingAssist = mov_t.find_min_angle(TARGET_THETA, current_robot_heading()) * mov_t.t_h_kp;
-    cd++; if (cd <= 10){ utility::leftvoltagereq(0); utility::rightvoltagereq(0); continue;}
+    double filtered_position = kal.lateral_update_filter_step(avgPos); // filter out robot pos with linear kalman filter
+    double avg_voltage_req = mov_t.compute_t(filtered_position, target); // compute proportional integral derivative controller on filtered pos
+    double headingAssist = mov_t.find_min_angle(TARGET_THETA, current_robot_heading()) * mov_t.t_h_kp; // apply a heading assist to keep robot moving straight
+    // initial timer of 100 ms to keep robot from oscillating
+    cd++; if (cd <= 20){ utility::leftvoltagereq(0); utility::rightvoltagereq(0); continue;}
     if (target < 0) { is_backwards = true; } else { is_backwards = false; }
     double l_output = 0; double r_output = 0;
     if (slew_enabled){
@@ -360,6 +362,7 @@ void TranslationPID::set_translation_pid(double target,
     }
     utility::leftvoltagereq((l_output * (12000.0 / 127)) + headingAssist);
     utility::rightvoltagereq((r_output * (12000.0 / 127)) - headingAssist);
+    std::cout << (avgPos) / 2 << ", " << std::endl;
     if (fabs(mov_t.t_error) < mov_t.t_error_thresh){ mov_t.t_iterator++; } else { mov_t.t_iterator = 0;}
     if (fabs(mov_t.t_iterator) > mov_t.t_tol){
       utility::stop();
@@ -388,6 +391,8 @@ void RotationPID::set_rotation_pid(double t_theta,
   rot_r.reset_r_alterables();
   rot_r.r_maxSpeed = maxSpeed;
   while (true){
+
+    twoSensorOdom();
     double currentPos = current_robot_heading();
     double vol = rot_r.compute_r(currentPos, t_theta);
 

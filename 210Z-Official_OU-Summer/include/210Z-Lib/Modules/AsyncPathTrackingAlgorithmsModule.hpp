@@ -4,15 +4,27 @@
 class Point{
     double xCoord;
     double yCoord;
+    double local_moveSpeed;
+    double local_turnSpeed;
     public:
         int AngleWrap(double angle);
         void setX(double x) {xCoord = x;}
         void setY(double y) {yCoord = y;}
+
+        void setMoveSpeed(double moveSpeed) {local_moveSpeed = moveSpeed;}
+        void setTurnSpeed(double turnSpeed) {local_turnSpeed = turnSpeed;}
+
         double getX(){
             return xCoord;
         }
         double getY(){
             return yCoord;
+        }
+        double getMoveSpeed(){
+            return local_moveSpeed;
+        }
+        double getTurnSpeed(){
+            return local_turnSpeed;
         }
 };
 
@@ -37,7 +49,9 @@ class CurvePoint{
         double getFollowDistance();
         double getX();
         double getY();
+        double getMoveSpeed();
+        double getTurnSpeed();
 
 };
 
-void FollowCurve(std::vector<CurvePoint> allPoints, double followAngle);
+void FollowCurve(std::vector<CurvePoint> allPoints, double followAngle, double move_speed, double turn_speed);

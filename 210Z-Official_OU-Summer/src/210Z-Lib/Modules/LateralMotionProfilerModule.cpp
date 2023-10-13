@@ -1,4 +1,18 @@
+/**
+ * @file MotionProfilerModule.cpp
+ * @author Zechariah Wang
+ * @brief Trapezoidal and S-Curve style motion profiles for linear movements
+ * @version 0.1
+ * @date 2023-08-08
+ * 
+ */
+
 #include "main.h"
+
+/**
+ * @brief reset motion profile values
+ * 
+ */
 
 void LinearMotionProfiler::trapezoidal_reset_values(){
     profiler.time_to_target_vel = 0;
@@ -9,6 +23,11 @@ void LinearMotionProfiler::trapezoidal_reset_values(){
     profiler.global_max_velocity = 0;
     profiler.global_init_pos = 0;
 }
+
+/**
+ * @brief calculate initial kinematic values using kinematic formulas
+ * 
+ */
 
 void LinearMotionProfiler::trapezoidal_calculate_initial_kinematic_values(pros::Motor& reference_left_motor, pros::Motor& reference_right_motor, double targetPosition, double maxVelocity, double acceleration) {
     reference_left_motor.set_zero_position(0); reference_right_motor.set_zero_position(0);
@@ -30,6 +49,11 @@ void LinearMotionProfiler::trapezoidal_calculate_initial_kinematic_values(pros::
     profiler.global_max_velocity = maxVelocity;
     profiler.global_init_pos = initialPosition;
 }
+
+/**
+ * @brief Trapezoidal curve executor
+ * 
+ */
 
 void LinearMotionProfiler::trapezoidal_calculate_motion_profile(pros::Motor& reference_left_motor, pros::Motor& reference_right_motor){
     if (fabs(profiler.global_distance) > 2 * profiler.distance_to_target_vel) {
@@ -101,6 +125,11 @@ void LinearMotionProfiler::trapezoidal_calculate_motion_profile(pros::Motor& ref
     }
 }
 
+/**
+ * @brief Reset S-Curve values
+ * 
+ */
+
 void LinearMotionProfiler::s_curve_reset_values(){
     profiler.time_to_target_vel = 0;
     profiler.distance_to_target_vel = 0;
@@ -110,6 +139,11 @@ void LinearMotionProfiler::s_curve_reset_values(){
     profiler.global_max_velocity = 0;
     profiler.global_init_pos = 0;
 }
+
+/**
+ * @brief Calculate initial S-curve kinematic values
+ * 
+ */
 
 void LinearMotionProfiler::s_curve_calculate_initial_kinematic_values(pros::Motor& reference_left_motor, pros::Motor& reference_right_motor, double targetDistance, double maxVelocity, double maxAcceleration) {
     reference_left_motor.set_zero_position(0); reference_right_motor.set_zero_position(0);
@@ -133,6 +167,11 @@ void LinearMotionProfiler::s_curve_calculate_initial_kinematic_values(pros::Moto
     profiler.global_max_velocity = maxVelocity;
     profiler.global_init_pos = initialPosition;
 }
+
+/**
+ * @brief S-Curve executor using cubic polynomial
+ * 
+ */
 
 void s_curve_calculate_motion_profile(pros::Motor& reference_left_motor, pros::Motor& reference_right_motor, double targetDistance, double maxVelocity, double maxAcceleration) {
     double initialPosition = (reference_left_motor.get_position() + reference_right_motor.get_position()) / 2;

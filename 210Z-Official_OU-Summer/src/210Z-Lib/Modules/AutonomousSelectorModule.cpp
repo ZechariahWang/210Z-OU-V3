@@ -15,6 +15,11 @@ uint8_t auton_finalized; // Final auton choice
 uint8_t selected_auton; // Auton choice
 uint8_t global_auton; // Auton choice
 
+/**
+ * @brief get input from auton selector
+ * 
+ */
+
 void Selector::receive_selector_input(u_int32_t time){
     Metrics data_displayer;
     char buffer2[300];
@@ -34,6 +39,11 @@ void Selector::receive_selector_input(u_int32_t time){
     }
 }
 
+/**
+ * @brief call selected auton
+ * 
+ */
+
 void Selector::select_current_auton(){
     int16_t chosenAuton = selected_auton;
     switch (chosenAuton) {
@@ -51,6 +61,11 @@ void Selector::select_current_auton(){
     default: global_auton = 0;  AutonSelectorPrimary(0);       break;
     }
 }
+
+/**
+ * @brief reset all vital sensors
+ * 
+ */
 
 void Selector::reset_all_primary_sensors(){
     imu_sensor.tare_rotation();

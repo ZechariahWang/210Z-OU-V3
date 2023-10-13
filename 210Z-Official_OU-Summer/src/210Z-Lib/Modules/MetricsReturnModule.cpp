@@ -8,9 +8,20 @@
 
 #include "main.h"
 
+/**
+ * @brief display core sensor data
+ * 
+ */
+
+double get_distance_error_new(double d_target_x, double d_target_y){
+  double delta_x = d_target_x - utility::get_x();
+  double delta_y = d_target_y - utility::get_y();
+  return sqrt(delta_x * delta_x + delta_y * delta_y);
+}
+
 void Metrics::display_data(){
 	char buffer[300];
-	sprintf(buffer, SYMBOL_GPS " X: %.2f Y: %.2f Theta: %f", utility::get_x(), utility::get_y(), odom_heading);
+	sprintf(buffer, SYMBOL_GPS " X: %.2f Y: %.2f Theta: %f", utility::get_x(), utility::get_y(), heading_very_new);
 	lv_label_set_text(odom_readings_sensor, buffer);
 	sprintf(buffer, SYMBOL_WARNING " FL: %.2f BL: %.2f FR: %.2f BR: %.2f", dt_front_left.get_temperature(), dt_rear_left.get_temperature(), dt_front_right.get_temperature(), dt_rear_right.get_temperature());
 	lv_label_set_text(dt_readings_sensor, buffer);
@@ -26,7 +37,7 @@ void Metrics::display_data(){
 
 void Metrics::output_sensor_data(){
     char buffer[300];
-	sprintf(buffer, SYMBOL_GPS " X: %.2f Y: %.2f Theta: %f", utility::get_x(), utility::get_y(), odom_heading);
+	sprintf(buffer, SYMBOL_GPS " X: %.2f Y: %.2f Theta: %f", utility::get_x(), utility::get_y(), heading_very_new);
 	lv_label_set_text(odom_readings_sensor, buffer);
 	sprintf(buffer, SYMBOL_WARNING " FL: %.2f BL: %.2f FR: %.2f BR: %.2f", dt_front_left.get_temperature(), dt_rear_left.get_temperature(), dt_front_right.get_temperature(), dt_rear_right.get_temperature());
 	lv_label_set_text(dt_readings_sensor, buffer);
@@ -40,11 +51,21 @@ void Metrics::output_sensor_data(){
 	lv_label_set_text(sensor4_readings_sensor, buffer);
 }
 
+/**
+ * @brief Display auton selector page
+ * 
+ */
+
 void Metrics::output_auton_selector(){
     char buffer[300];
 	sprintf(buffer, SYMBOL_DRIVE " Selected Path: %d", selected_auton);
 	lv_label_set_text(current_auton_display_selector, buffer);
 }
+
+/**
+ * @brief Display game page
+ * 
+ */
 
 void Metrics::output_game_data(){
     char buffer[300];
@@ -60,11 +81,10 @@ void Metrics::output_game_data(){
 	lv_label_set_text(competition_stat_game, buffer);
 }
 
-double get_distance_error_new(double d_target_x, double d_target_y){
-  double delta_x = d_target_x - utility::get_x();
-  double delta_y = d_target_y - utility::get_y();
-  return sqrt(delta_x * delta_x + delta_y * delta_y);
-}
+/**
+ * @brief Display misc page
+ * 
+ */
 
 void Metrics::output_misc_data(){
     char buffer[300];

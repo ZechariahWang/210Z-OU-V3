@@ -8,6 +8,11 @@
 
 #include "main.h"
 
+/**
+ * @brief external utility namespace for common motor voltage requests and distance triangulations 
+ * 
+ */
+
 namespace utility{
   int sgn(double num){ return (num < 0) ? -1 : ((num > 0) ? 1 : 0); }
   double clamp(double num, double min, double max){
@@ -41,7 +46,68 @@ namespace utility{
   void set_x(double x) { global_robot_x = x; }
   void set_y(double y) { global_robot_y = y; }
 
+  double get_min_angle_error(float angle1, float angle2, bool radians){
+      float max = radians ? 2 * M_PI : 360;
+      float half = radians ? M_PI : 180;
+      angle1 = fmod(angle1, max);
+      angle2 = fmod(angle2, max);
+      float error = angle1 - angle2;
+      if (error > half) error -= max;
+      else if (error < -half) error += max;
+      return error;
+  }
+
+  double get_angular_error(double target_x, double target_y){
+    double x = target_x - global_robot_x;
+    double y = target_y - global_robot_y;
+    double delta_theta = atan2(x, y) * 180 / M_PI - current_robot_heading();
+    while (fabs(delta_theta) > 180){
+      delta_theta -= 360 * delta_theta / fabs(delta_theta);
+    }
+    return delta_theta;
+  }
+
+  double get_distance_error(double d_target_x, double d_target_y){
+    double x = d_target_x;
+    double y = d_target_y;
+    y -= global_robot_y;
+    x -= global_robot_x;
+    return sqrt(x * x + y * y);
+  }
+
+  double getAngleError(double target_x, double target_y, bool reverse) {
+    double x = target_x;
+    double y = target_y;
+
+    x -= global_robot_x;
+    y -= global_robot_y;
+
+    double delta_theta = atan2(y, x) - heading_very_new;
+
+    // if movement is reversed, calculate delta_theta using a 180 degree rotation
+    // of the target point
+    if (reverse) {
+      delta_theta = atan2(-y, -x) - heading_very_new;
+    }
+
+    while (fabs(delta_theta) > M_PI) {
+      delta_theta -= 2 * M_PI * delta_theta / fabs(delta_theta);
+    }
+
+    return delta_theta;
+  }
+
+  double getDistanceError(double target_x, double target_y) {
+    double x = target_x;
+    double y = target_y;
+
+    y -= global_robot_y;
+    x -= global_robot_x;
+    return sqrt(x * x + y * y);
+  }
+
 }
 
+// last resort in autonomous: reset the current robot pos with an artificial position
 void FeedbackControl::overRideCoordinatePos(double new_gx, double new_gy){ utility::set_x(new_gx); utility::set_y(new_gy); }
 

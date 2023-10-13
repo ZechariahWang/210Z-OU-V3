@@ -20,10 +20,10 @@ class FeedbackControl{
         void swing_to_point(double tx, double ty, double swingDamper);
         void overRideCoordinatePos(double new_gx, double new_gy);
         void simultaneous_mov_executor(double targetX, double targetY, double targetTheta, double translationSpeed, double rotationSpeed);
+        void move_to_point(double target_x, double target_y, double max_linear_speed, double max_rotation_speed, double kp_linear, double kp_angular, bool backwards);
 };
 
 void boomerang(double target_x, double target_y, double target_theta, double max_linear_speed, double max_rotation_speed, double d_lead, double kp_linear, double kp_angular);
-void move_to_point(double target_x, double target_y, double max_linear_speed, double max_rotation_speed, double kp_linear, double kp_angular);
 void mimic_move_to_point(double target_x,
                    double target_y,
                    double max_linear_speed,

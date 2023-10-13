@@ -8,6 +8,11 @@
 
 #include "main.h"
 
+/**
+ * @brief setting constructors and default vals
+ * 
+ */
+
 CurvePoint::CurvePoint(double x, double y, double moveSpeed, double turnSpeed, double followDistance, double slowDownTurnRadians, double slowDownTurnAmount){
     this->x = x;
     this->y = y;
@@ -16,6 +21,7 @@ CurvePoint::CurvePoint(double x, double y, double moveSpeed, double turnSpeed, d
     this->followDistance = followDistance;
     this->slowDownTurnRadians = slowDownTurnRadians;
     this->slowDownTurnAmount = slowDownTurnAmount;
+    std::cout <<"ASSIGNED: " << this->moveSpeed << " turn speed: " << this->turnSpeed << std::endl;
 }
 
 CurvePoint::CurvePoint(const CurvePoint &thisPoint){ // Assigns values to the class
@@ -35,11 +41,16 @@ Point CurvePoint::toPoint(){ // Sets a new point to the current x and y val
     return newPoint;
 }
 
-int Point::AngleWrap(double angle){ // Wrap angle to 2 PI
+int Point::AngleWrap(double angle){ // Wrap angle to 2 PI (360 degrees)
     while (angle < -M_PI){ angle += 2 * M_PI; }
     while (angle > M_PI){ angle -= 2 * M_PI; }
     return angle;
 }
+
+/**
+ * @brief Given two points, calculate all possible intersections between look ahead distance
+ * 
+ */
 
 std::vector<Point> LineCircleIntersection(Point circleCenter, double radius, Point linePoint1, Point linePoint2){
     if (fabs(linePoint1.getY() - linePoint2.getY()) < 0.003){ linePoint1.setY(linePoint2.getY() + 0.003); }
@@ -86,10 +97,17 @@ std::vector<Point> LineCircleIntersection(Point circleCenter, double radius, Poi
     return allPoints;
 }
 
-void CurvePoint::setPoint(Point point){ x = point.getX(); y = point.getY(); }
+void CurvePoint::setPoint(Point point){ x = point.getX(); y = point.getY(); moveSpeed = point.getMoveSpeed(); turnSpeed = point.getTurnSpeed(); }
 double CurvePoint::getFollowDistance(){ return followDistance; }
 double CurvePoint::getX(){ return x; }
 double CurvePoint::getY(){ return y; }
+double CurvePoint::getMoveSpeed(){ return moveSpeed; }
+double CurvePoint::getTurnSpeed(){ return turnSpeed; }
+
+/**
+ * @brief determines the closest point from the individual point class representing local robot pos, and signals driver to follow path
+ * 
+ */
 
 CurvePoint getFollowPointPath(std::vector<CurvePoint> pathPoints, Point robotLocation, double followRadius){
     CurvePoint followMe(pathPoints.at(0));
@@ -105,19 +123,25 @@ CurvePoint getFollowPointPath(std::vector<CurvePoint> pathPoints, Point robotLoc
             Point two = intersections.at(1);
             double distanceOne = sqrtf(pow((endLine.getX() - one.getX()), 2) + pow((endLine.getY() - one.getY()), 2));
             double distanceTwo = sqrtf(pow((endLine.getX() - two.getX()), 2) + pow((endLine.getY() - two.getY()), 2));
-            if (distanceOne < distanceTwo){ followMe.setPoint(one); }
+            if (distanceOne < distanceTwo){ followMe.setPoint(one);}
             else{ followMe.setPoint(two); }
         }
     }
     return followMe;
 }
 
-void FollowCurve(std::vector<CurvePoint> allPoints, double followAngle){
+/**
+ * @brief Pure Pursuit driver function, determining the closest point to follow as part of the point trajectory defined
+ * 
+ */
+
+void FollowCurve(std::vector<CurvePoint> allPoints, double followAngle, double move_speed, double turn_speed){
     Point robotPosition; 
     robotPosition.setX(utility::get_x());
     robotPosition.setY(utility::get_y());
+
     CurvePoint followMe = getFollowPointPath(allPoints, robotPosition, allPoints.at(0).getFollowDistance());
-    mimic_move_to_point(followMe.getX(), followMe.getY(), 90000, 90000, 4, 2);
+    mimic_move_to_point(followMe.getX(), followMe.getY(), 90000, 90000, move_speed, turn_speed);
 }
 
 

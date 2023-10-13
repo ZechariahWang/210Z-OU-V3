@@ -26,3 +26,14 @@ class Odometry{
 };
 
 extern float odom_heading;
+
+extern double heading_very_new;
+
+void odomTask();
+extern float odom_heading;
+void update_odom_new();
+void twoSensorOdom();
+
+
+void odom_task_new();
+void odomTask_LOL();

@@ -10,18 +10,18 @@
 #include "main.h"
 
 bool GPS_ENABLED;
-pros::ADIEncoder vertical_auxiliary_sensor('g', 'h', false);
+pros::ADIEncoder vertical_auxiliary_sensor('d', 'f', true);
 pros::Rotation horizontal_rotation_sensor(8);
 pros::Gps gps_sensor(99);
 pros::c::gps_status_s_t gpsData;
 pros::Controller controller(pros::E_CONTROLLER_MASTER);
-pros::Imu imu_sensor(4);
-pros::Motor dt_front_left(21, pros::E_MOTOR_GEARSET_06, false, pros::E_MOTOR_ENCODER_COUNTS);
-pros::Motor dt_front_right(2, pros::E_MOTOR_GEARSET_06, true, pros::E_MOTOR_ENCODER_COUNTS);
-pros::Motor dt_rear_left(5, pros::E_MOTOR_GEARSET_06, true, pros::E_MOTOR_ENCODER_COUNTS);
-pros::Motor dt_rear_right(6, pros::E_MOTOR_GEARSET_06, false, pros::E_MOTOR_ENCODER_COUNTS);
-pros::Motor dt_middle_left(7, pros::E_MOTOR_GEARSET_06, false, pros::E_MOTOR_ENCODER_COUNTS);
-pros::Motor dt_middle_right(20, pros::E_MOTOR_GEARSET_06, true, pros::E_MOTOR_ENCODER_COUNTS);
+pros::Imu imu_sensor(20);
+pros::Motor dt_front_left(19, pros::E_MOTOR_GEARSET_06, false, pros::E_MOTOR_ENCODER_COUNTS);
+pros::Motor dt_front_right(16, pros::E_MOTOR_GEARSET_06, true, pros::E_MOTOR_ENCODER_COUNTS);
+pros::Motor dt_rear_left(7, pros::E_MOTOR_GEARSET_06, false, pros::E_MOTOR_ENCODER_COUNTS);
+pros::Motor dt_rear_right(5, pros::E_MOTOR_GEARSET_06, true, pros::E_MOTOR_ENCODER_COUNTS);
+pros::Motor dt_middle_left(9, pros::E_MOTOR_GEARSET_06, false, pros::E_MOTOR_ENCODER_COUNTS);
+pros::Motor dt_middle_right(40, pros::E_MOTOR_GEARSET_06, true, pros::E_MOTOR_ENCODER_COUNTS);
 
 pros::MotorGroup left_side_motors({dt_front_left, dt_middle_left, dt_rear_left});
 pros::MotorGroup right_side_motors({dt_front_right, dt_middle_right, dt_rear_right});
@@ -43,6 +43,6 @@ KalmanFilter kal;
 Slew slew;
 Math math;
 
-pros::ADIAnalogIn cata_sensor('a');
+pros::ADIAnalogIn cata_sensor('h');
 pros::Motor cata_motor(3, pros::E_MOTOR_GEARSET_06, false, pros::E_MOTOR_ENCODER_COUNTS);
 pros::Motor intake_motor(12, pros::E_MOTOR_GEARSET_06, false, pros::E_MOTOR_ENCODER_COUNTS);

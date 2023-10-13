@@ -12,8 +12,8 @@ const u_int16_t forwardCurve       = 10;
 const u_int16_t turnCurve          = 3;
 const double euler                 = 2.71828;
 static bool toggleRedCurve         = false; // toggle red curve
-static bool turningRed             = false;
-static bool forwardRed             = false;
+static bool turningRed             = false; // turning curve
+static bool forwardRed             = false; // linear curve
 
   
 
@@ -27,7 +27,8 @@ static bool forwardRed             = false;
 
 int32_t joystick_accelerator(bool red, int8_t input, const double t){
     int16_t value = 0;
-    if (red) { value = (std::exp(-t / 10) + std::exp((std::abs(input) - 100) / 10) * (1 - std::exp(-t / 10))) * input; }
+    // exponential formula
+    if (red) { value = (std::exp(-t / 10) + std::exp((std::abs(input) - 100) / 10) * (1 - std::exp(-t / 10))) * input; } 
     else { value = std::exp(((std::abs(input) - 100) * t) / 1000) * input; }
     return value;
 }

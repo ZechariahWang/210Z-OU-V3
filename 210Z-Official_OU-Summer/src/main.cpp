@@ -7,7 +7,7 @@
  */
 
 #include "main.h"
-#include "Misc/Globals.hpp"
+#include "Config/Globals.hpp"
 #include "display/lv_objx/lv_label.h"
 #include "pros/motors.h"
 #include "vector"
@@ -574,34 +574,6 @@ void competition_initialize() {}
  *  
  */
 
-void PurePursuitTestPath(){
-    std::vector<CurvePoint> Path;
-
-	double finalX = 15;
-	double finalY = 100;
-    CurvePoint StartPos(utility::get_x(), utility::get_y(), 0, 0, 10, 5, 1);
-    CurvePoint newPoint1(-20, 30, 0, 0, 10, 5, 1);
-    CurvePoint newPoint2(-10, 80, 0, 0, 10, 5, 1);
-    CurvePoint newPoint3(15, 95, 0, 0, 10, 5, 1);
-    CurvePoint end(finalX, finalY, 0, 0, 10, 5, 1);
-    Path.push_back(StartPos);
-    Path.push_back(newPoint1); 
-    Path.push_back(newPoint2);
-    Path.push_back(newPoint3);
-	Path.push_back(end);
-
-    while (true){
-      odom.odometry_position_update();
-      if (fabs(sqrt(pow(finalX - utility::get_x(), 2) + pow(finalY - utility::get_y(), 2))) <= 5){
-		move_to_point(finalX, finalY, 900000, 900000, 3, 2.5);
-        utility::stop();
-        break;
-      }
-      FollowCurve(Path, 0);
-      pros::delay(10);
-    }
-}
-
 void set_to_brake(){
 	dt_front_left.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
 	dt_middle_left.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);	
@@ -611,26 +583,109 @@ void set_to_brake(){
 	dt_rear_right.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
 }
 
+void PurePursuitTestPath(){
+	double end_point_tolerance = 15;
+	double moveSpeed = 4; double turnSpeed = 2;
+    std::vector<CurvePoint> Path;
+	double half_pose_x = 10; double half_pose_y = 50;
+	double end_pose_x = -25; double end_pose_y = 50;
+	double reference_end_pose_x = end_pose_x + (-15); double reference_end_pose_y = end_pose_y + 0;
+    CurvePoint StartPos(utility::get_x(), utility::get_y(), 4, 2, 10, 5, 1);
+    CurvePoint newPoint1(half_pose_x, half_pose_y, 1, 2, 10, 5, 1);
+    CurvePoint newPoint2(end_pose_x, end_pose_y, 2, 1, 10, 5, 1);
+    CurvePoint newPoint3(reference_end_pose_x, reference_end_pose_y, 4, 4, 10, 5, 1);
+    Path.push_back(StartPos); Path.push_back(newPoint1); Path.push_back(newPoint2); Path.push_back(newPoint3);
+
+    while (true){ twoSensorOdom(); if (fabs(sqrt(pow(reference_end_pose_x - utility::get_x(), 2) + pow(reference_end_pose_y - utility::get_y(), 2))) <= fabs(end_point_tolerance)){ utility::stop(); break; } FollowCurve(Path, 0, moveSpeed = 5, turnSpeed = 2); pros::delay(10); }
+}
+
+
+// TODO: make the reference pose larger than the break tolerance
+void PurePursuitTestPath2(){
+    std::vector<CurvePoint> Path;
+	double end_point_tolerance = 15;
+	double moveSpeed = 5; double turnSpeed = 2;
+	double half_pose_x = -20; double half_pose_y = 0;
+	double end_pose_x = 0; double end_pose_y = 0;
+	double reference_end_pose_x = end_pose_x + 8; double reference_end_pose_y = end_pose_y + 0;
+    CurvePoint StartPos(utility::get_x(), utility::get_y(), 0, 0, 10, 5, 1);
+    CurvePoint newPoint1(half_pose_x, half_pose_y, 0, 0, 10, 5, 1);
+    CurvePoint newPoint2(end_pose_x, end_pose_y, 0, 0, 10, 5, 1);
+    CurvePoint newPoint3(reference_end_pose_x, reference_end_pose_y, 0, 0, 10, 5, 1);
+    Path.push_back(StartPos); Path.push_back(newPoint1); Path.push_back(newPoint2); Path.push_back(newPoint3);
+
+    while (true){ twoSensorOdom(); if (fabs(sqrt(pow(reference_end_pose_x - utility::get_x(), 2) + pow(reference_end_pose_y - utility::get_y(), 2))) <= fabs(end_point_tolerance)){ utility::stop(); break; } FollowCurve(Path, 0,	moveSpeed, turnSpeed); pros::delay(10); }
+}
+
+void raw_motor(int target){
+	while (true){
+	    double avgPos = (dt_front_left.get_position() + dt_front_right.get_position()) / 2;
+		utility::leftvoltagereq((60 * (12000.0 / 127)));
+		utility::rightvoltagereq((60 * (12000.0 / 127)));
+    	std::cout << (avgPos) << ", " << std::endl;
+		if (fabs(avgPos - target) <= 10){
+			utility::stop();
+		}
+		pros::delay(10);
+	}
+}
+
 void autonomous(){  // Autonomous function control
+	set_to_brake();
 	slew.set_slew_distance({7, 7});
 	slew.set_slew_min_power({70, 70});
 	mov_t.set_dt_constants(3.125, 1.6, 600); // Parameters are : Wheel diameter, gear ratio, motor cartridge type
 	// selector.recieve_selector_input(time); // Enabled Auton Selector (STEP 1) ONLY FOR PROTOTYPE USE
 	// select.select_current_auton(); // Enable Auton Selector (STEP 2) 
 
-    mov_t.set_t_constants(0.45, 0, 5, 300);
-	mov_t.set_translation_pid(46 * 0.625, 90, false);
-
-	rot_r.set_r_constants(6, 0, 45);
-	rot_r.set_rotation_pid(270, 90);
+	// PurePursuitTestPath();
 
 
-    mov_t.set_t_constants(0.45, 0, 5, 300);
-	mov_t.set_translation_pid(72 * 0.625, 90, false);
+	mtp.move_to_point(20, -20, 60, 60, 10, 80, false);
 
-	rot_r.set_r_constants(6, 0, 45);
-	rot_r.set_rotation_pid(180, 90);
 
+	// mov_t.set_t_constants(5, 0, 35, 200);
+	// mov_t.set_translation_pid(33, 60, false);
+
+	// raw_motor(600);
+
+	// rot_r.set_r_constants(6, 0, 45);
+	// rot_r.set_rotation_pid(-90, 90);
+
+	// mov_t.set_t_constants(5, 0, 35, 200);
+	// mov_t.set_translation_pid(15, 60, false);
+
+
+
+	// pros::delay(1000);
+	
+	// mov_t.set_t_constants(5, 0, 35, 30);
+	// mov_t.set_translation_pid(-5, 90, false);
+
+	// rot_r.set_r_constants(6, 0, 45);
+	// rot_r.set_rotation_pid(180, 90);
+
+	// PurePursuitTestPath2();
+
+	// mtp.move_to_point(-10, 55, 60, 60, 4, 3, false);
+
+	// rot_r.set_r_constants(6, 0, 45);
+	// rot_r.set_rotation_pid(90, 90);
+
+	// mtp.move_to_point(20, 50, 60, 60, 4, 3, false);
+
+	// pros::delay(1000);
+
+	// rot_r.set_r_constants(6, 0, 45);
+	// rot_r.set_rotation_pid(180, 90);
+
+	// mov_t.set_t_constants(5, 0, 35, 30);
+	// mov_t.set_translation_pid(7, 60, false);
+
+	// cur_c.set_c_constants(6, 0, 45);
+	// cur_c.set_curve_pid(90, 60, 0.8, false);
+
+	
 }
 
 /**
@@ -641,15 +696,13 @@ void autonomous(){  // Autonomous function control
 void opcontrol(){ // Driver control function
 	char buffer[300]; 
 	while (true){
-		odom.odometry_position_update();
-		op_mov.exponential_curve_accelerator();
-		power_intake();
-		raw_cata();
+		// twoSensorOdom();
+		odom_task_new();
+		// op_mov.exponential_curve_accelerator();
+		op_mov.x_drive_dt_Control();
+		// // power_intake();
+		// // raw_cata();
 
-		data_displayer.output_sensor_data(); // Display robot stats and info
-		data_displayer.output_game_data(); // Display robot stats and info
-		data_displayer.display_data();
-		data_displayer.output_misc_data();
 		pros::delay(delayAmount); // Dont hog CPU ;)
 	}
 }
